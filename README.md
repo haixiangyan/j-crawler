@@ -1,2 +1,2 @@
 # j-crawler
-Java 实现的一个小爬虫
+使用 Java 实现的一个多线程爬虫
