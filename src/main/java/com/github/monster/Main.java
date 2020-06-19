@@ -30,14 +30,14 @@ public class Main {
                 continue;
             }
 
-            if (!url.contains("sina.cn") || url.contains("passport.sina.cn")) {
+            if (!isValid(url)) {
                 continue;
             }
 
             // 开始处理
-            System.out.println("正在爬取：" + url);
-            String html = getIndexPage(url);
-            List<String> pageUrls = getPageUrls(html);
+            Document document = parsePage(url);
+
+            List<String> pageUrls = getPageUrls(document);
             urlPool.addAll(pageUrls);
 
             // 标记成已处理
@@ -45,16 +45,19 @@ public class Main {
         }
     }
 
-    private static List<String> getPageUrls(String html) {
+    private static List<String> getPageUrls(Document document) {
         List<String> pageUrls = new ArrayList<>();
 
-        Document document = Jsoup.parse(html);
-        Elements aTags = document.select("a");
+        document.select("a").stream()
+                .map(aTag -> aTag.attr("href"))
+                .forEach(pageUrls::add);
 
-        for (Element aTag : aTags) {
-            pageUrls.add(aTag.attr("href"));
-        }
+        storeArticle(document);
 
+        return pageUrls;
+    }
+
+    private static void storeArticle(Document document) {
         Elements articleTags = document.select("article");
         if (!articleTags.isEmpty()) {
             for (Element articleTag : articleTags) {
@@ -62,21 +65,38 @@ public class Main {
                 System.out.println("已收录文章：" + title);
             }
         }
-
-        return pageUrls;
     }
 
-    private static String getIndexPage(String url) throws IOException {
+    private static Document parsePage(String url) throws IOException {
+        System.out.println("正在爬取：" + url);
+
         CloseableHttpClient httpclient = HttpClients.createDefault();
 
         HttpGet httpGet = new HttpGet(url);
         httpGet.addHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36");
 
         try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
-            System.out.println(response.getStatusLine());
             HttpEntity entity = response.getEntity();
 
-            return EntityUtils.toString(entity);
+            String html = EntityUtils.toString(entity);
+
+            return Jsoup.parse(html);
         }
+    }
+
+    private static boolean isValid(String url) {
+        return (isNewsPage(url) || isIndexPage(url)) && isNotLoginPage(url);
+    }
+
+    private static boolean isIndexPage(String url) {
+        return "https://sina.cn".equals(url);
+    }
+
+    private static boolean isNewsPage(String url) {
+        return url.contains("news.sina.cn");
+    }
+
+    private static boolean isNotLoginPage(String url) {
+        return !url.contains("passport.sina.cn");
     }
 }
