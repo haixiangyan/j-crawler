@@ -13,7 +13,9 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Main {
     private static final int READY = 0;
@@ -38,7 +40,7 @@ public class Main {
             // 开始处理
             Document document = parsePage(url);
 
-            List<String> pageUrls = getPageUrls(document);
+            List<String> pageUrls = getPageUrls(connection, document, url);
             for (String pageUrl : pageUrls) {
                 if (pageUrl.startsWith("//")) {
                     pageUrl = "https:" + pageUrl;
@@ -60,7 +62,8 @@ public class Main {
             return resultSet.next();
         } finally {
             if (resultSet != null) {
-                resultSet.close();;
+                resultSet.close();
+                ;
             }
         }
     }
@@ -112,25 +115,41 @@ public class Main {
         }
     }
 
-    private static List<String> getPageUrls(Document document) {
+    private static List<String> getPageUrls(Connection connection, Document document, String url) throws SQLException {
         List<String> pageUrls = new ArrayList<>();
 
         document.select("a").stream()
                 .map(aTag -> aTag.attr("href"))
                 .forEach(pageUrls::add);
 
-        storeArticle(document);
+        storeArticle(connection, document, url);
 
         return pageUrls;
     }
 
-    private static void storeArticle(Document document) {
+    private static void storeArticle(Connection connection, Document document, String url) throws SQLException {
         Elements articleTags = document.select("article");
         if (!articleTags.isEmpty()) {
             for (Element articleTag : articleTags) {
                 String title = articleTag.child(0).text();
+                String content = articleTag.select("p")
+                        .stream()
+                        .map(Element::text)
+                        .collect(Collectors.joining("\n"));
+
                 System.out.println("已收录文章：" + title);
+                insertArticle(connection, title, content, url);
             }
+        }
+    }
+
+    private static void insertArticle(Connection connection, String title, String content, String url) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("insert into news (TITLE, CONTENT, URL, CREATED_AT, UPDATED_AT) values (?, ?, ?, now(), now())")) {
+            statement.setString(1, title);
+            statement.setString(2, content);
+            statement.setString(3, url);
+
+            statement.execute();
         }
     }
 
