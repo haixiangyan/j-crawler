@@ -26,20 +26,12 @@ public class Main {
     public static void main(String[] args) throws IOException, SQLException {
         Connection connection = DriverManager.getConnection(JDBC_URL, USER_NAME, PASSWORD);
 
-        while (true) {
-            Queue<String> readyUrls = new LinkedList<>(loadUrls(connection, READY));
+        String url;
+        while ((url = loadOneUrl(connection, READY)) != null) {
+            // 标记已处理
+            updateUrlStatus(connection, url, PROCESSED);
 
-            if (readyUrls.isEmpty()) {
-                break;
-            }
-
-            String url = readyUrls.poll();
-
-            if (hasProcessed(connection, url)) {
-                continue;
-            }
-
-            if (!isValid(url)) {
+            if (hasProcessed(connection, url) || !isValid(url)) {
                 continue;
             }
 
@@ -52,9 +44,6 @@ public class Main {
                     insertUrl(connection, pageUrl);
                 }
             }
-
-            // 标记成已处理
-            updateUrlStatus(connection, url, PROCESSED);
         }
     }
 
@@ -94,19 +83,14 @@ public class Main {
         }
     }
 
-    private static List<String> loadUrls(Connection connection, int status) throws SQLException {
-        List<String> urls = new ArrayList<>();
-
-        try (PreparedStatement statement = connection.prepareStatement("select url from urls where status = ?");) {
+    private static String loadOneUrl(Connection connection, int status) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("select url from urls where status = ? limit 1");) {
             statement.setInt(1, status);
 
             ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                urls.add(resultSet.getString(1));
-            }
-        }
 
-        return urls;
+            return resultSet.next() ? resultSet.getString(1) : null;
+        }
     }
 
     private static List<String> getPageUrls(Document document) {
