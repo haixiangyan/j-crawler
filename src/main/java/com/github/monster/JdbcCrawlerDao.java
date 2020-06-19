@@ -4,16 +4,28 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.stream.Collectors;
 
-import static com.github.monster.Main.READY;
+import static com.github.monster.Crawler.READY;
 
-public class DAO {
-    public static String loadOneUrl(Connection connection, int status) throws SQLException {
+public class JdbcCrawlerDao implements CrawlerDao{
+    private static final String JDBC_URL = "jdbc:h2:file:/Users/home/workspace/j-crawler/news";
+    private static final String USER_NAME = "root";
+    private static final String PASSWORD = "123456";
+
+    private final Connection connection;
+
+    public JdbcCrawlerDao() {
+        try {
+            this.connection = DriverManager.getConnection(JDBC_URL, USER_NAME, PASSWORD);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String loadOneUrl(int status) throws SQLException {
         ResultSet resultSet = null;
         try (PreparedStatement statement = connection.prepareStatement("select url from urls where status = ? limit 1")) {
             statement.setInt(1, status);
@@ -28,7 +40,8 @@ public class DAO {
         }
     }
 
-    public static void storeArticle(Connection connection, Document document, String url) throws SQLException {
+    @Override
+    public void storeArticle(Document document, String url) throws SQLException {
         Elements articleTags = document.select("article");
         if (!articleTags.isEmpty()) {
             for (Element articleTag : articleTags) {
@@ -39,12 +52,13 @@ public class DAO {
                         .collect(Collectors.joining("\n"));
 
                 System.out.println("已收录文章：" + title);
-                insertArticle(connection, title, content, url);
+                insertArticle(title, content, url);
             }
         }
     }
 
-    public static void insertArticle(Connection connection, String title, String content, String url) throws SQLException {
+    @Override
+    public void insertArticle(String title, String content, String url) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("insert into news (TITLE, CONTENT, URL, CREATED_AT, UPDATED_AT) values (?, ?, ?, now(), now())")) {
             statement.setString(1, title);
             statement.setString(2, content);
@@ -54,7 +68,8 @@ public class DAO {
         }
     }
 
-    public static void insertUrl(Connection connection, String url) throws SQLException {
+    @Override
+    public void insertUrl(String url) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("insert into urls (url, status) values(?, ?)")) {
             statement.setString(1, url);
             statement.setInt(2, READY);
@@ -63,7 +78,8 @@ public class DAO {
         }
     }
 
-    public static void updateUrlStatus(Connection connection, String url, int status) throws SQLException {
+    @Override
+    public void updateUrlStatus(String url, int status) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("update urls set status = ?  where url = ?")) {
             statement.setInt(1, status);
             statement.setString(2, url);
@@ -72,7 +88,8 @@ public class DAO {
         }
     }
 
-    public static boolean isUrlExist(Connection connection, String url) throws SQLException {
+    @Override
+    public boolean isUrlExist(String url) throws SQLException {
         ResultSet resultSet = null;
         try (PreparedStatement statement = connection.prepareStatement("select * from urls where url = ?")) {
             statement.setString(1, url);
@@ -86,7 +103,8 @@ public class DAO {
         }
     }
 
-    public static boolean hasProcessed(Connection connection, String url) throws SQLException {
+    @Override
+    public boolean hasProcessed(String url) throws SQLException {
         ResultSet resultSet = null;
         try (PreparedStatement statement = connection.prepareStatement("select * from urls where url = ? and status = 1")) {
             statement.setString(1, url);
