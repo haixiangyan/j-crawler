@@ -28,19 +28,23 @@ public class Main {
 
         String url;
         while ((url = loadOneUrl(connection, READY)) != null) {
-            // 标记已处理
-            updateUrlStatus(connection, url, PROCESSED);
-
             if (hasProcessed(connection, url) || !isValid(url)) {
                 continue;
             }
+
+            // 标记已处理
+            updateUrlStatus(connection, url, PROCESSED);
 
             // 开始处理
             Document document = parsePage(url);
 
             List<String> pageUrls = getPageUrls(document);
             for (String pageUrl : pageUrls) {
-                if (isValid(pageUrl) && !isUrlExist(connection, pageUrl)) {
+                if (pageUrl.startsWith("//")) {
+                    pageUrl = "https:" + pageUrl;
+                }
+
+                if (isValid(pageUrl) && !isUrlExist(connection, pageUrl) && !pageUrl.toLowerCase().contains("javascript")) {
                     insertUrl(connection, pageUrl);
                 }
             }
@@ -48,20 +52,30 @@ public class Main {
     }
 
     private static boolean hasProcessed(Connection connection, String url) throws SQLException {
+        ResultSet resultSet = null;
         try (PreparedStatement statement = connection.prepareStatement("select * from urls where url = ? and status = 1")) {
             statement.setString(1, url);
 
-            ResultSet resultSet = statement.executeQuery();
+            resultSet = statement.executeQuery();
             return resultSet.next();
+        } finally {
+            if (resultSet != null) {
+                resultSet.close();;
+            }
         }
     }
 
     private static boolean isUrlExist(Connection connection, String url) throws SQLException {
+        ResultSet resultSet = null;
         try (PreparedStatement statement = connection.prepareStatement("select * from urls where url = ?")) {
             statement.setString(1, url);
 
-            ResultSet resultSet = statement.executeQuery();
+            resultSet = statement.executeQuery();
             return resultSet.next();
+        } finally {
+            if (resultSet != null) {
+                resultSet.close();
+            }
         }
     }
 
@@ -84,12 +98,17 @@ public class Main {
     }
 
     private static String loadOneUrl(Connection connection, int status) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement("select url from urls where status = ? limit 1");) {
+        ResultSet resultSet = null;
+        try (PreparedStatement statement = connection.prepareStatement("select url from urls where status = ? limit 1")) {
             statement.setInt(1, status);
 
-            ResultSet resultSet = statement.executeQuery();
+            resultSet = statement.executeQuery();
 
             return resultSet.next() ? resultSet.getString(1) : null;
+        } finally {
+            if (resultSet != null) {
+                resultSet.close();
+            }
         }
     }
 

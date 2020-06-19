@@ -1,1 +1,1 @@
-insert into urls (url, status) values ('https://sina.cn', 1)
+insert into urls (url, status) values ('https://sina.cn', 0)
