@@ -12,21 +12,30 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.sql.*;
 import java.util.*;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
-        // 待处理
-        Queue<String> urlPool = new LinkedList<>();
-        // 已处理
-        Set<String> processedUrls = new HashSet<>();
+    private static final int READY = 0;
+    private static final int PROCESSED = 1;
 
-        urlPool.add("https://sina.cn");
+    private static final String JDBC_URL = "jdbc:h2:file:/Users/home/workspace/j-crawler/news";
+    private static final String USER_NAME = "root";
+    private static final String PASSWORD = "123456";
 
-        while (!urlPool.isEmpty()) {
-            String url = urlPool.poll();
+    public static void main(String[] args) throws IOException, SQLException {
+        Connection connection = DriverManager.getConnection(JDBC_URL, USER_NAME, PASSWORD);
 
-            if (processedUrls.contains(url)) {
+        while (true) {
+            Queue<String> readyUrls = new LinkedList<>(loadUrls(connection, READY));
+
+            if (readyUrls.isEmpty()) {
+                break;
+            }
+
+            String url = readyUrls.poll();
+
+            if (hasProcessed(connection, url)) {
                 continue;
             }
 
@@ -38,11 +47,66 @@ public class Main {
             Document document = parsePage(url);
 
             List<String> pageUrls = getPageUrls(document);
-            urlPool.addAll(pageUrls);
+            for (String pageUrl : pageUrls) {
+                if (isValid(pageUrl) && !isUrlExist(connection, pageUrl)) {
+                    insertUrl(connection, pageUrl);
+                }
+            }
 
             // 标记成已处理
-            processedUrls.add(url);
+            updateUrlStatus(connection, url, PROCESSED);
         }
+    }
+
+    private static boolean hasProcessed(Connection connection, String url) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("select * from urls where url = ? and status = 1")) {
+            statement.setString(1, url);
+
+            ResultSet resultSet = statement.executeQuery();
+            return resultSet.next();
+        }
+    }
+
+    private static boolean isUrlExist(Connection connection, String url) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("select * from urls where url = ?")) {
+            statement.setString(1, url);
+
+            ResultSet resultSet = statement.executeQuery();
+            return resultSet.next();
+        }
+    }
+
+    private static void updateUrlStatus(Connection connection, String url, int status) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("update urls set status = ?  where url = ?")) {
+            statement.setInt(1, status);
+            statement.setString(2, url);
+
+            statement.execute();
+        }
+    }
+
+    private static void insertUrl(Connection connection, String url) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("insert into urls (url, status) values(?, ?)")) {
+            statement.setString(1, url);
+            statement.setInt(2, READY);
+
+            statement.execute();
+        }
+    }
+
+    private static List<String> loadUrls(Connection connection, int status) throws SQLException {
+        List<String> urls = new ArrayList<>();
+
+        try (PreparedStatement statement = connection.prepareStatement("select url from urls where status = ?");) {
+            statement.setInt(1, status);
+
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                urls.add(resultSet.getString(1));
+            }
+        }
+
+        return urls;
     }
 
     private static List<String> getPageUrls(Document document) {
