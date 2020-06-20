@@ -1,7 +1,5 @@
 package com.github.monster;
 
-import org.jsoup.nodes.Document;
-
 import java.sql.SQLException;
 
 public interface CrawlerDao {

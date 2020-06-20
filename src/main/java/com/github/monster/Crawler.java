@@ -17,41 +17,45 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Crawler {
+public class Crawler extends Thread {
     public static final int READY = 0;
     public static final int PROCESSED = 1;
 
-    private final CrawlerDao dao = new MyBatisCrawlerDao();
+    private final CrawlerDao dao;
 
-    private void run() throws SQLException, IOException {
-
-        String url;
-        while ((url = dao.loadOneUrl(READY)) != null) {
-            if (dao.hasProcessed(url) || !isValid(url)) {
-                continue;
-            }
-
-            // 标记已处理
-            dao.updateUrlStatus(url, PROCESSED);
-
-            // 开始处理
-            Document document = parsePage(url);
-
-            List<String> pageUrls = getPageUrls(document, url);
-            for (String pageUrl : pageUrls) {
-                if (pageUrl.startsWith("//")) {
-                    pageUrl = "https:" + pageUrl;
-                }
-
-                if (isValid(pageUrl) && !dao.isUrlExist(pageUrl) && !pageUrl.toLowerCase().contains("javascript")) {
-                    dao.insertUrl(pageUrl);
-                }
-            }
-        }
+    public Crawler(CrawlerDao dao) {
+        this.dao = dao;
     }
 
-    public static void main(String[] args) throws SQLException, IOException {
-        new Crawler().run();
+    @Override
+    public void run() {
+        try {
+            String url;
+            while ((url = dao.loadOneUrl(READY)) != null) {
+                if (dao.hasProcessed(url) || !isValid(url)) {
+                    continue;
+                }
+
+                // 标记已处理
+                dao.updateUrlStatus(url, PROCESSED);
+
+                // 开始处理
+                Document document = parsePage(url);
+
+                List<String> pageUrls = getPageUrls(document, url);
+                for (String pageUrl : pageUrls) {
+                    if (pageUrl.startsWith("//")) {
+                        pageUrl = "https:" + pageUrl;
+                    }
+
+                    if (isValid(pageUrl) && !dao.isUrlExist(pageUrl) && !pageUrl.toLowerCase().contains("javascript")) {
+                        dao.insertUrl(pageUrl);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void storeArticle(Document document, String url) throws SQLException {

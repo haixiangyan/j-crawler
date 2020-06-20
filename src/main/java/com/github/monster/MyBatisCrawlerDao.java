@@ -24,7 +24,7 @@ public class MyBatisCrawlerDao implements CrawlerDao {
     }
 
     @Override
-    public String loadOneUrl(int status) {
+    public synchronized String loadOneUrl(int status) {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             return (String) session.selectOne("com.github.monster.Url.loadOneUrl");
         }
