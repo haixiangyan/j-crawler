@@ -67,7 +67,7 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>6.4.4</version>
                 <configuration>
-                    <url>jdbc:mysql://localhost:3306/sina</url>
+                    <url>jdbc:mysql://localhost:3306/sina?characterEncoding=utf-8</url>
                     <user>root</user>
                     <password>123456</password>
                 </configuration>
