@@ -18,6 +18,12 @@ create database sina;
 mvn flyway:migrate
 ```
 
+## Elastic Search
+
+```bash
+docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 -v `pwd`/es-data:/usr/share/elasticsearch/data -e "discovery.type=single-node" elasticsearch:7.4.0
+```
+
 ## 运行
 
 直接运行 Main.java 即可。
