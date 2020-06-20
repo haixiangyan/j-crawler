@@ -48,6 +48,11 @@
             <artifactId>jsoup</artifactId>
             <version>1.13.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>3.5.5</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -57,7 +62,7 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>6.4.4</version>
                 <configuration>
-                    <url>jdbc:h2:file:/Users/home/workspace/j-crawler/news</url>
+                    <url>jdbc:h2:file:/Users/home/workspace/j-crawler/sina</url>
                     <user>root</user>
                     <password>123456</password>
                 </configuration>

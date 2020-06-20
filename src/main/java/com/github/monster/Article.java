@@ -2,13 +2,19 @@ package com.github.monster;
 
 import java.util.Date;
 
-public class News {
+public class Article {
     private Integer id;
-    private String url;
     private String title;
     private String content;
+    private String url;
     private Date createdAt;
     private Date updatedAt;
+
+    public Article(String title, String content, String url) {
+        this.title = title;
+        this.content = content;
+        this.url = url;
+    }
 
     public void setId(Integer id) {
         this.id = id;

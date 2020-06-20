@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.github.monster.Url">
+    <select id="loadOneUrl" resultType="String">
+        select url
+        from urls
+        where status = 0
+        limit 1
+    </select>
+    <select id="countUrl" parameterType="String" resultType="int">
+        select count(*)
+        from urls
+        where url = #{url}
+        <if test="status != null">
+            and status = #{status}
+        </if>
+    </select>
+
+    <update id="updateUrlStatus" parameterType="com.github.monster.Url">
+        update urls
+        set status = #{status}
+        where url = #{url}
+    </update>
+
+    <insert id="insertUrl" parameterType="com.github.monster.Url">
+        insert into urls (url, status)
+        values (#{url}, #{status})
+    </insert>
+</mapper>

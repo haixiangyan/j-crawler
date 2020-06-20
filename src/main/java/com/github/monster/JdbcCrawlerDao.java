@@ -1,16 +1,11 @@
 package com.github.monster;
 
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
 import java.sql.*;
-import java.util.stream.Collectors;
 
 import static com.github.monster.Crawler.READY;
 
 public class JdbcCrawlerDao implements CrawlerDao{
-    private static final String JDBC_URL = "jdbc:h2:file:/Users/home/workspace/j-crawler/news";
+    private static final String JDBC_URL = "jdbc:h2:file:/Users/home/workspace/j-crawler/sina";
     private static final String USER_NAME = "root";
     private static final String PASSWORD = "123456";
 
@@ -41,25 +36,8 @@ public class JdbcCrawlerDao implements CrawlerDao{
     }
 
     @Override
-    public void storeArticle(Document document, String url) throws SQLException {
-        Elements articleTags = document.select("article");
-        if (!articleTags.isEmpty()) {
-            for (Element articleTag : articleTags) {
-                String title = articleTag.child(0).text();
-                String content = articleTag.select("p")
-                        .stream()
-                        .map(Element::text)
-                        .collect(Collectors.joining("\n"));
-
-                System.out.println("已收录文章：" + title);
-                insertArticle(title, content, url);
-            }
-        }
-    }
-
-    @Override
     public void insertArticle(String title, String content, String url) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement("insert into news (TITLE, CONTENT, URL, CREATED_AT, UPDATED_AT) values (?, ?, ?, now(), now())")) {
+        try (PreparedStatement statement = connection.prepareStatement("insert into articles (TITLE, CONTENT, URL, CREATED_AT, UPDATED_AT) values (?, ?, ?, now(), now())")) {
             statement.setString(1, title);
             statement.setString(2, content);
             statement.setString(3, url);
@@ -114,7 +92,6 @@ public class JdbcCrawlerDao implements CrawlerDao{
         } finally {
             if (resultSet != null) {
                 resultSet.close();
-                ;
             }
         }
     }

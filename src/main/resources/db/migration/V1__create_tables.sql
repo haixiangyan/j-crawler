@@ -4,7 +4,7 @@ create table URLS
     STATUS INT
 );
 
-create table NEWS
+create table ARTICLES
 (
     ID         BIGINT auto_increment primary key,
     TITLE      TEXT,

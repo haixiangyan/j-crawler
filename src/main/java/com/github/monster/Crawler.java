@@ -8,17 +8,20 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Crawler {
     public static final int READY = 0;
     public static final int PROCESSED = 1;
 
-    private final CrawlerDao dao = new JdbcCrawlerDao();
+    private final CrawlerDao dao = new MyBatisCrawlerDao();
 
     private void run() throws SQLException, IOException {
 
@@ -51,6 +54,22 @@ public class Crawler {
         new Crawler().run();
     }
 
+    private void storeArticle(Document document, String url) throws SQLException {
+        Elements articleTags = document.select("article");
+        if (!articleTags.isEmpty()) {
+            for (Element articleTag : articleTags) {
+                String title = articleTag.child(0).text();
+                String content = articleTag.select("p")
+                        .stream()
+                        .map(Element::text)
+                        .collect(Collectors.joining("\n"));
+
+                System.out.println("已收录文章：" + title);
+                dao.insertArticle(title, content, url);
+            }
+        }
+    }
+
     private List<String> getPageUrls(Document document, String url) throws SQLException {
         List<String> pageUrls = new ArrayList<>();
 
@@ -58,7 +77,7 @@ public class Crawler {
                 .map(aTag -> aTag.attr("href"))
                 .forEach(pageUrls::add);
 
-        dao.storeArticle(document, url);
+        storeArticle(document, url);
 
         return pageUrls;
     }

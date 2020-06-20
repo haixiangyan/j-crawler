@@ -7,8 +7,6 @@ import java.sql.SQLException;
 public interface CrawlerDao {
     String loadOneUrl(int status) throws SQLException;
 
-    void storeArticle(Document document, String url) throws SQLException;
-
     void insertArticle(String title, String content, String url) throws SQLException;
 
     void insertUrl(String url) throws SQLException;
