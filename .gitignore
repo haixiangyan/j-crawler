@@ -13,3 +13,4 @@ bin/
 
 *.db
 /mysql-data
+/es-data
