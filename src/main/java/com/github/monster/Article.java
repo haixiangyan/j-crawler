@@ -1,19 +1,30 @@
 package com.github.monster;
 
-import java.util.Date;
+import java.time.Instant;
 
 public class Article {
     private Integer id;
     private String title;
     private String content;
     private String url;
-    private Date createdAt;
-    private Date updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
+
+    public Article() {}
 
     public Article(String title, String content, String url) {
         this.title = title;
         this.content = content;
         this.url = url;
+    }
+
+    public Article(Article target) {
+        this.id = target.id;
+        this.title = target.title;
+        this.content = target.content;
+        this.url = target.url;
+        this.createdAt = target.createdAt;
+        this.updatedAt = target.updatedAt;
     }
 
     public void setId(Integer id) {
@@ -32,11 +43,11 @@ public class Article {
         this.content = content;
     }
 
-    public void setCreatedAt(Date createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public void setUpdatedAt(Date updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 
@@ -56,11 +67,11 @@ public class Article {
         return content;
     }
 
-    public Date getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public Date getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 }
