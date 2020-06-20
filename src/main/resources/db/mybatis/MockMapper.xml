@@ -5,7 +5,8 @@
 <mapper namespace="com.github.monster.MockMapper">
     <select id="selectArticleSeeds" resultType="com.github.monster.Article">
         select id, url, title, content, created_at, updated_at
-        from articles;
+        from articles
+        limit 2000
     </select>
 
     <insert id="mockArticles" parameterType="com.github.monster.Article">
